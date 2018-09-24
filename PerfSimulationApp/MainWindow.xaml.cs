@@ -19,6 +19,7 @@ using System.Windows.Shapes;
 using Agent;
 using IotHubServer;
 using LiveCharts;
+using LiveCharts.Configurations;
 using LiveCharts.Wpf;
 using SimulatedDevice;
 
@@ -29,14 +30,17 @@ namespace PerfSimulationApp
     /// </summary>
     public partial class MainWindow : Window
     {
+        const int CHART_QUEUE_LENGTH = 25;
+        const int AGENT_CREATION_BATCH_SIZE = 50;
+
         public SeriesCollection ThroughputCollection { get; set; }
 
         public string DeviceCount { get; set; }
 
-    public SeriesCollection LatencyCollection { get; set; }
+        public SeriesCollection LatencyCollection { get; set; }
 
-        public DateTime[] Labels { get; set; }
         public Func<double, string> YFormatter { get; set; }
+        public Func<double, string> XFormatter { get; set; }
 
         SizeLimitedQueue<(double, DateTime)> DataPointQueue;
         SizeLimitedQueue<(double, DateTime)> FailurePointQueue;
@@ -56,6 +60,10 @@ namespace PerfSimulationApp
         {
             InitializeComponent();
 
+            var dayConfig = Mappers.Xy<(double, DateTime)>()
+            .X(dayModel => (double)dayModel.Item2.Ticks / TimeSpan.FromSeconds(1).Ticks)
+            .Y(dayModel => dayModel.Item1);
+
             DeviceCount = "0";
 
             DataPointQueue = null;
@@ -66,34 +74,34 @@ namespace PerfSimulationApp
             latencySeries = new LineSeries
             {
                 Title = "AverageLatency",
-                Values = new ChartValues<double> { }
+                Values = new ChartValues<(double, DateTime)> { }
             };
 
             throughputSeries = new LineSeries
             {
                 Title = "Throughput",
-                Values = new ChartValues<double> { }
+                Values = new ChartValues<(double, DateTime)> { }
             };
 
             failureSeries = new LineSeries
             {
                 Title = "Failures/Sec",
-                Values = new ChartValues<double> { }
+                Values = new ChartValues<(double, DateTime)> { }
             };
 
-            ThroughputCollection = new SeriesCollection
+            ThroughputCollection = new SeriesCollection(dayConfig)
             {
                throughputSeries,
                failureSeries
             };
 
-            LatencyCollection = new SeriesCollection
+            LatencyCollection = new SeriesCollection(dayConfig)
             {
                latencySeries
             };
 
-            Labels = new DateTime[0] {};
             YFormatter = value => value.ToString("G");
+            XFormatter = value => new DateTime((long)(value * TimeSpan.FromSeconds(1).Ticks)).ToString("HH:mm:ss");
             agentList = new List<SimulationAgent>();
             SetTimer();
             this.DataContext = this;
@@ -157,17 +165,16 @@ namespace PerfSimulationApp
                 LatencyPointQueue.Enqueue((averageLatencySum / activeAgentCount, DateTime.UtcNow));
 
                 var points = DataPointQueue.ToArray();
-                Labels = points.Select(x => x.Item2).ToArray();
                 throughputSeries.Values.Clear();
-                throughputSeries.Values.AddRange(points.Select(x => (object)x.Item1));
+                throughputSeries.Values.AddRange(points.Select(x => (object)x));
 
                 points = FailurePointQueue.ToArray();
                 failureSeries.Values.Clear();
-                failureSeries.Values.AddRange(points.Select(x => (object)x.Item1));
+                failureSeries.Values.AddRange(points.Select(x => (object)x));
 
                 points = LatencyPointQueue.ToArray();
                 latencySeries.Values.Clear();
-                latencySeries.Values.AddRange(points.Select(x => (object)x.Item1));
+                latencySeries.Values.AddRange(points.Select(x => (object)x));
             }
         }
 
@@ -176,11 +183,22 @@ namespace PerfSimulationApp
             tokenSource?.Cancel();
             tokenSource?.Dispose();
             tokenSource = new CancellationTokenSource();
-            DataPointQueue = new SizeLimitedQueue<(double, DateTime)>(20);
-            FailurePointQueue = new SizeLimitedQueue<(double, DateTime)>(20);
-            LatencyPointQueue = new SizeLimitedQueue<(double, DateTime)>(20);
+            DataPointQueue = new SizeLimitedQueue<(double, DateTime)>(CHART_QUEUE_LENGTH);
+            FailurePointQueue = new SizeLimitedQueue<(double, DateTime)>(CHART_QUEUE_LENGTH);
+            LatencyPointQueue = new SizeLimitedQueue<(double, DateTime)>(CHART_QUEUE_LENGTH);
 
             var agentCount = Convert.ToInt32(DeviceCountBox.Text);
+
+            TimeSpan? runDuration;
+            if(TimeSpan.TryParse(TimeSpanBox.Text, out TimeSpan time))
+            {
+                runDuration = time;
+            }
+            else
+            {
+                runDuration = null;
+            }
+
             while (agentList.Count > agentCount)
             {
                 agentList.RemoveAt(agentList.Count - 1);
@@ -192,19 +210,19 @@ namespace PerfSimulationApp
                 if (tokenSource.Token.IsCancellationRequested)
                     return;
 
-                Task.Run(() => agent.RunAsync(tokenSource.Token, 0));
+                Task.Run(() => agent.RunAsync(tokenSource.Token, runDuration));
             }
 
             while (agentList.Count < agentCount)
             {
-                var connections = await DeviceManager.CreateDevices(HubConnectionStringBox.Text, Enumerable.Range(agentList.Count, Math.Min(50, agentCount - agentList.Count)).Select(x => "perfDevice" + (agentList.Count+x)));
+                var connections = await DeviceManager.CreateDevices(HubConnectionStringBox.Text, Enumerable.Range(agentList.Count, Math.Min(AGENT_CREATION_BATCH_SIZE, agentCount - agentList.Count)).Select(x => "perfDevice" + (agentList.Count+x)));
                 var agents = connections.Select(x => new SimulationAgent(x));
                 foreach (var agent in agents)
                 {
                     if (tokenSource.Token.IsCancellationRequested)
                         return;
 
-                    Task.Run(() => agent.RunAsync(tokenSource.Token, 0));
+                    Task.Run(() => agent.RunAsync(tokenSource.Token, runDuration));
                     agentList.Add(agent);
                 }
             }
@@ -219,7 +237,7 @@ namespace PerfSimulationApp
 
         private void HubConnectionStringBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            e.Handled = true;
+            e.Handled = false;
         }
 
         private void DeviceCountBox_PreviewTextInput(object sender, TextCompositionEventArgs e)

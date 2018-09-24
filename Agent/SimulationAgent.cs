@@ -61,12 +61,23 @@ namespace Agent
 
         //}
 
-        public async Task RunAsync(CancellationToken token, int ms)
+        public async Task RunAsync(CancellationToken token, TimeSpan? time)
         {
             tracker = new StatisticsTracker();
-            int target = ms * intervalAdjustment;
+            DateTime target;
+
+            if (time.HasValue)
+            {
+                target = DateTime.UtcNow + time.Value;
+            }
+            else
+            {
+                target = DateTime.MaxValue;
+            }
+
             Stopwatch watch = Stopwatch.StartNew();
-            while (!token.IsCancellationRequested)
+
+            while (!token.IsCancellationRequested && DateTime.UtcNow < target)
             {
                await Task.Run(() => Work(watch));
             }
