@@ -51,6 +51,8 @@ namespace SimulationModels
         public IEnumerable<(string, MethodCallback)> SupportedMethods => new (string, MethodCallback)[] { (nameof(AirConditioning), AirConditioning), (nameof(IncrementCloud), IncrementCloud) , (nameof(DecrementCloud), DecrementCloud) };
         public IEnumerable<(string, Object)> InitialProperties => new (string, Object)[0];
 
+        public DesiredPropertyUpdateCallback DesiredPropertyUpdateCallbackProperty => DesiredPropertyUpdateCallback;
+
         public Message GetTelemetryMessage(Random randomGenerator)
         {
             var telemetryDataPoint = new
@@ -88,5 +90,10 @@ namespace SimulationModels
             return Task.FromResult(new MethodResponse(200));
         }
 
-    }
+        Task DesiredPropertyUpdateCallback(TwinCollection desiredProperties, object userContext)
+        {
+            return Task.FromResult(true);
+        }
+
+      }
 }

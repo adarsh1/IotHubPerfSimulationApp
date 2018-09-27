@@ -66,6 +66,8 @@ namespace Agent
                 await client.SetMethodHandlerAsync(method.Item1, method.Item2, null);
             }
 
+            await client.SetDesiredPropertyUpdateCallbackAsync(deviceModel.DesiredPropertyUpdateCallbackProperty, null);
+
             initialized = true;
 
         }

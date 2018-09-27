@@ -21,5 +21,7 @@ namespace SimulationModels
         Message GetTelemetryMessage(Random randomGenerator);
 
         TwinCollection GetReportedPropertyUpdate(Random randomGenerator);
+
+        DesiredPropertyUpdateCallback DesiredPropertyUpdateCallbackProperty { get; }
     }
 }
