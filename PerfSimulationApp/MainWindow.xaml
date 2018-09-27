@@ -9,7 +9,7 @@
         Title="MainWindow" Height="850" Width="1600">
     <Viewbox Stretch="Uniform">
         <Grid Height="809">
-            <Button x:Name="StartButton" Content="Start" HorizontalAlignment="Left" Margin="1085,76,0,0" VerticalAlignment="Top" Width="116" Height="42" Click="StartButton_Click"/>
+            <Button x:Name="StartButton" Content="Start" HorizontalAlignment="Left" Margin="1271,757,0,0" VerticalAlignment="Top" Width="116" Height="42" Click="StartButton_Click"/>
             <TextBox x:Name="HubConnectionStringBox" HorizontalAlignment="Left" Height="42" Margin="32,76,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="770" PreviewTextInput="HubConnectionStringBox_PreviewTextInput"/>
             <Grid HorizontalAlignment="Left" Height="270" Margin="27,149,0,0" VerticalAlignment="Top" Width="1539">
                 <lvc:CartesianChart Series="{Binding ThroughputCollection}" LegendLocation="Right" Margin="-10,10,10,-27" >
@@ -21,7 +21,7 @@
                     </lvc:CartesianChart.AxisX>
                 </lvc:CartesianChart>
             </Grid>
-            <Button x:Name="StopButton" Content="Stop" HorizontalAlignment="Left" Margin="1227,76,0,0" VerticalAlignment="Top" Width="116" Height="42" Click="StopButton_Click"/>
+            <Button x:Name="StopButton" Content="Stop" HorizontalAlignment="Left" Margin="1413,757,0,0" VerticalAlignment="Top" Width="116" Height="42" Click="StopButton_Click"/>
             <Grid HorizontalAlignment="Left" Height="270" Margin="27,444,0,0" VerticalAlignment="Top" Width="1539">
                 <lvc:CartesianChart Series="{Binding LatencyCollection}" LegendLocation="Right" Margin="-11,10,11,-50" >
                     <lvc:CartesianChart.AxisY>
@@ -40,6 +40,8 @@
             </Border>
             <TextBox x:Name="TimeSpanBox" HorizontalAlignment="Left" Height="42" Margin="954,76,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="97" FontSize="14"/>
             <Label Content="TimeSpan" HorizontalAlignment="Left" Margin="954,40,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
+            <ComboBox HorizontalAlignment="Left" SelectedItem="{Binding WorkLoadType, Mode = TwoWay}" ItemsSource="{Binding WorkLoadTypes}" Margin="1088,86,0,0" VerticalAlignment="Top" Width="148" Height="23"/>
+            <Label Content="WorkLoad" HorizontalAlignment="Left"  Margin="1122,40,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
         </Grid>
     </Viewbox>
 </Window>

@@ -36,6 +36,8 @@ namespace PerfSimulationApp
         public SeriesCollection ThroughputCollection { get; set; }
 
         public string DeviceCount { get; set; }
+        public WorkLoadType WorkLoadType { get; set; }
+        public IEnumerable<WorkLoadType> WorkLoadTypes => Enum.GetValues(typeof(WorkLoadType)).Cast<WorkLoadType>();
 
         public SeriesCollection LatencyCollection { get; set; }
 
@@ -102,6 +104,7 @@ namespace PerfSimulationApp
 
             YFormatter = value => value.ToString("G");
             XFormatter = value => new DateTime((long)(value * TimeSpan.FromSeconds(1).Ticks)).ToString("HH:mm:ss");
+            WorkLoadType = WorkLoadType.DeviceTelemetry;
             agentList = new List<SimulationAgent>();
             SetTimer();
             this.DataContext = this;
@@ -210,7 +213,7 @@ namespace PerfSimulationApp
                 if (tokenSource.Token.IsCancellationRequested)
                     return;
 
-                Task.Run(() => agent.RunAsync(tokenSource.Token, runDuration));
+                Task.Run(() => agent.RunAsync(WorkLoadType, tokenSource.Token, runDuration));
             }
 
             while (agentList.Count < agentCount)
@@ -222,7 +225,7 @@ namespace PerfSimulationApp
                     if (tokenSource.Token.IsCancellationRequested)
                         return;
 
-                    Task.Run(() => agent.RunAsync(tokenSource.Token, runDuration));
+                    Task.Run(() => agent.RunAsync(WorkLoadType, tokenSource.Token, runDuration));
                     agentList.Add(agent);
                 }
             }

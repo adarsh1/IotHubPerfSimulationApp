@@ -1,69 +1,71 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Devices.Client;
 using Microsoft.Azure.Devices.Shared;
 using Newtonsoft.Json;
+using SimulationModels;
 
 namespace Agent
 {
     public class SimulationAgent
     {
+        IModel deviceModel;
         StatisticsTracker tracker;
         int intervalAdjustment = 10;
         private DeviceClient client;
         private string DeviceId = "";
         private string deviceConnectionString;
+        private const string SupportedMethodsProperty = "SupportedMethods";
+        private const string TelemetryProperty = "Telemetry";
+        const string TypeProperty = "Type";
+        const string TransportTypeProperty = "TransportType";
+        static Random randomGenerator = new Random(Guid.NewGuid().GetHashCode());
+        bool initialized;
+
 
         public SimulationAgent(string connectionString)
         {
+            initialized = false;
             deviceConnectionString = connectionString;
             client = DeviceClient.CreateFromConnectionString(deviceConnectionString, TransportType.Amqp);
             var connectionStringBuilder = IotHubConnectionStringBuilder.Create(deviceConnectionString);
             DeviceId = connectionStringBuilder.DeviceId;
+            deviceModel = new ThermostatModel();
         }
 
-        //public async Task Initialize()
-        //{
-        //    var twin = await client.GetTwinAsync();
+        public async Task Initialize()
+        {
+            var twin = await client.GetTwinAsync();
 
-        //    TwinCollection properties = new TwinCollection();
-        //    properties[transportTypeProperty] = this.transportType.ToString();
-        //    properties[typeProperty] = DeviceType;
-        //    properties[SupportedMethodsProperty] = nameof(AirConditioning) + "," + nameof(IncrementCloud) + "," + nameof(DecrementCloud);
-        //    properties[TelemetryProperty] = new
-        //    {
-        //        TemperatureSchema = new
-        //        {
-        //            Interval = "00:00:01",
-        //            MessageTemplate = Thermostat.MessageTemplate,
-        //            MessageSchema = new
-        //            {
-        //                Name = MessageSchema,
-        //                Format = "JSON",
-        //                Fields = new
-        //                {
-        //                    temperature = "Double"
-        //                }
-        //            }
-        //        }
-        //    };
-        //    properties[firmwareProperty] = Firmware;
-        //    try
-        //    {
-        //        await client.UpdateReportedPropertiesAsync(properties);
-        //    }
-        //    catch (Exception e)
-        //    {
-        //    }
+            TwinCollection properties = new TwinCollection();
+            properties[TransportTypeProperty] = "Amqp";
+            properties[TypeProperty] = deviceModel.DeviceType;
+            properties[SupportedMethodsProperty] = String.Join(",", deviceModel.SupportedMethods.Select(x => x.Item1));
+            properties[TelemetryProperty] = deviceModel.TelemetrySchema;
+            foreach (var property in deviceModel.InitialProperties)
+            {
+                properties[property.Item1] = property.Item2;
+            }
 
-        //}
+            await client.UpdateReportedPropertiesAsync(properties);
 
-        public async Task RunAsync(CancellationToken token, TimeSpan? time)
+            initialized = true;
+
+        }
+
+        public async Task RunAsync(WorkLoadType workLoad, CancellationToken token, TimeSpan? time)
         {
             tracker = new StatisticsTracker();
+
+            if (!initialized)
+            {
+                await Initialize();
+            }
+
             DateTime target;
 
             if (time.HasValue)
@@ -77,34 +79,50 @@ namespace Agent
 
             Stopwatch watch = Stopwatch.StartNew();
 
+            Func<Stopwatch, Task> workLoadMethod;
+
+            switch (workLoad)
+            {
+                case WorkLoadType.DeviceTelemetry:
+                    workLoadMethod = SendTelemetry;
+                    break;
+                case WorkLoadType.ReportedPropertyUpdate:
+                    workLoadMethod = UpdateReportedProperty;
+                    break;
+                default:
+                    throw new InvalidOperationException();
+            }
+
+
             while (!token.IsCancellationRequested && DateTime.UtcNow < target)
             {
-               await Task.Run(() => Work(watch));
+                await Task.Run(() => Work(workLoadMethod,watch));
             }
         }
 
-        async Task SendTelemetry()
+        async Task SendTelemetry(Stopwatch watch)
         {
-                var telemetryDataPoint = new
-                {
-                    temperature = 1
-                };
-                var messageString = JsonConvert.SerializeObject(telemetryDataPoint);
-                var message = new Message(Encoding.UTF8.GetBytes(messageString));
-                message.Properties.Add("$$CreationTimeUtc", DateTime.UtcNow.ToString());
-               // message.Properties.Add("$$MessageSchema", MessageSchema);
-                message.Properties.Add("$$ContentType", "JSON");
-                message.Properties.Add("$ThresholdExceeded", telemetryDataPoint.temperature > 25 ? "True" : "False");
-                await client.SendEventAsync(message);
+            watch.Stop();
+            var message = deviceModel.GetTelemetryMessage(randomGenerator);
+            watch.Start();
+            await client.SendEventAsync(message);
         }
 
-        public async Task Work(Stopwatch watch)
+        async Task UpdateReportedProperty(Stopwatch watch)
+        {
+            watch.Stop();
+            var message = deviceModel.GetReportedPropertyUpdate(randomGenerator);
+            watch.Start();
+            await client.UpdateReportedPropertiesAsync(message);
+        }
+
+        public async Task Work(Func<Stopwatch, Task> method, Stopwatch watch)
         {
             try
             {
                 watch.Reset();
                 watch.Start();
-               await SendTelemetry();
+                await method(watch);
                 tracker.Increment();
                 tracker.UpdateAverageLatency(watch.ElapsedMilliseconds);
             }
@@ -112,7 +130,7 @@ namespace Agent
             {
                 tracker.FailureIncrement();
             }
-            
+
         }
 
         public AgentStatistics GetIntervalStats()
