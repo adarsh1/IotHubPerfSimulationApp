@@ -8,6 +8,7 @@ namespace SimulationModels
     using System.Collections;
     using System.Collections.Generic;
     using System.Text;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Shared;
     using Newtonsoft.Json;
@@ -47,7 +48,7 @@ namespace SimulationModels
             }
         };
 
-        public IEnumerable<(string, MethodCallback)> SupportedMethods => new (string, MethodCallback)[0];
+        public IEnumerable<(string, MethodCallback)> SupportedMethods => new (string, MethodCallback)[] { (nameof(AirConditioning), AirConditioning), (nameof(IncrementCloud), IncrementCloud) , (nameof(DecrementCloud), DecrementCloud) };
         public IEnumerable<(string, Object)> InitialProperties => new (string, Object)[0];
 
         public Message GetTelemetryMessage(Random randomGenerator)
@@ -70,6 +71,21 @@ namespace SimulationModels
             TwinCollection properties = new TwinCollection();
             properties[targetTempProperty] = randomGenerator.Next(7, 50);
             return properties;
+        }
+
+        Task<MethodResponse> AirConditioning(MethodRequest methodRequest, object userContext)
+        {
+            return Task.FromResult(new MethodResponse(200));
+        }
+
+        Task<MethodResponse> IncrementCloud(MethodRequest methodRequest, object userContext)
+        {
+            return Task.FromResult(new MethodResponse(200));
+        }
+
+        Task<MethodResponse> DecrementCloud(MethodRequest methodRequest, object userContext)
+        {
+            return Task.FromResult(new MethodResponse(200));
         }
 
     }

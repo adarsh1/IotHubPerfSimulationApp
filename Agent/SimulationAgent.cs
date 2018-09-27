@@ -25,24 +25,32 @@ namespace Agent
         const string TransportTypeProperty = "TransportType";
         static Random randomGenerator = new Random(Guid.NewGuid().GetHashCode());
         bool initialized;
+        TransportType transportType;
 
 
-        public SimulationAgent(string connectionString)
+        public SimulationAgent(string connectionString, TransportType transportTypeValue)
         {
             initialized = false;
             deviceConnectionString = connectionString;
-            client = DeviceClient.CreateFromConnectionString(deviceConnectionString, TransportType.Amqp);
+            transportType = transportTypeValue;
+            CreateClient();
             var connectionStringBuilder = IotHubConnectionStringBuilder.Create(deviceConnectionString);
             DeviceId = connectionStringBuilder.DeviceId;
             deviceModel = new ThermostatModel();
         }
 
+        private void CreateClient()
+        {
+            var oldClient = Interlocked.Exchange(ref client, DeviceClient.CreateFromConnectionString(deviceConnectionString, transportType));
+            oldClient?.Dispose();
+        }
+
         public async Task Initialize()
         {
             var twin = await client.GetTwinAsync();
-
+            await client.OpenAsync();
             TwinCollection properties = new TwinCollection();
-            properties[TransportTypeProperty] = "Amqp";
+            properties[TransportTypeProperty] = transportType.ToString();
             properties[TypeProperty] = deviceModel.DeviceType;
             properties[SupportedMethodsProperty] = String.Join(",", deviceModel.SupportedMethods.Select(x => x.Item1));
             properties[TelemetryProperty] = deviceModel.TelemetrySchema;
@@ -53,13 +61,24 @@ namespace Agent
 
             await client.UpdateReportedPropertiesAsync(properties);
 
+            foreach(var method in deviceModel.SupportedMethods)
+            {
+                await client.SetMethodHandlerAsync(method.Item1, method.Item2, null);
+            }
+
             initialized = true;
 
         }
 
-        public async Task RunAsync(WorkLoadType workLoad, CancellationToken token, TimeSpan? time)
+        public async Task RunAsync(WorkLoadType workLoad, TransportType transportTypeValue, CancellationToken token, TimeSpan? time)
         {
             tracker = new StatisticsTracker();
+
+            if (transportType != transportTypeValue)
+            {
+                transportType = transportTypeValue;
+                CreateClient();
+            }
 
             if (!initialized)
             {

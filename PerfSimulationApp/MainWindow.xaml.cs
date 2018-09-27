@@ -21,6 +21,7 @@ using IotHubServer;
 using LiveCharts;
 using LiveCharts.Configurations;
 using LiveCharts.Wpf;
+using Microsoft.Azure.Devices.Client;
 using SimulatedDevice;
 
 namespace PerfSimulationApp
@@ -38,6 +39,9 @@ namespace PerfSimulationApp
         public string DeviceCount { get; set; }
         public WorkLoadType WorkLoadType { get; set; }
         public IEnumerable<WorkLoadType> WorkLoadTypes => Enum.GetValues(typeof(WorkLoadType)).Cast<WorkLoadType>();
+
+        public TransportType TransportType { get; set; }
+        public IEnumerable<TransportType> TransportTypes => Enum.GetValues(typeof(TransportType)).Cast<TransportType>();
 
         public SeriesCollection LatencyCollection { get; set; }
 
@@ -105,6 +109,7 @@ namespace PerfSimulationApp
             YFormatter = value => value.ToString("G");
             XFormatter = value => new DateTime((long)(value * TimeSpan.FromSeconds(1).Ticks)).ToString("HH:mm:ss");
             WorkLoadType = WorkLoadType.DeviceTelemetry;
+            TransportType = TransportType.Amqp;
             agentList = new List<SimulationAgent>();
             SetTimer();
             this.DataContext = this;
@@ -213,19 +218,19 @@ namespace PerfSimulationApp
                 if (tokenSource.Token.IsCancellationRequested)
                     return;
 
-                Task.Run(() => agent.RunAsync(WorkLoadType, tokenSource.Token, runDuration));
+                Task.Run(() => agent.RunAsync(WorkLoadType, TransportType, tokenSource.Token, runDuration));
             }
 
             while (agentList.Count < agentCount)
             {
                 var connections = await DeviceManager.CreateDevices(HubConnectionStringBox.Text, Enumerable.Range(agentList.Count, Math.Min(AGENT_CREATION_BATCH_SIZE, agentCount - agentList.Count)).Select(x => "perfDevice" + (agentList.Count+x)));
-                var agents = connections.Select(x => new SimulationAgent(x));
+                var agents = connections.Select(x => new SimulationAgent(x, TransportType));
                 foreach (var agent in agents)
                 {
                     if (tokenSource.Token.IsCancellationRequested)
                         return;
 
-                    Task.Run(() => agent.RunAsync(WorkLoadType, tokenSource.Token, runDuration));
+                    Task.Run(() => agent.RunAsync(WorkLoadType, TransportType, tokenSource.Token, runDuration));
                     agentList.Add(agent);
                 }
             }

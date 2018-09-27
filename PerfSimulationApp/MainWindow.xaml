@@ -40,8 +40,10 @@
             </Border>
             <TextBox x:Name="TimeSpanBox" HorizontalAlignment="Left" Height="42" Margin="954,76,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="97" FontSize="14"/>
             <Label Content="TimeSpan" HorizontalAlignment="Left" Margin="954,40,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
-            <ComboBox HorizontalAlignment="Left" SelectedItem="{Binding WorkLoadType, Mode = TwoWay}" ItemsSource="{Binding WorkLoadTypes}" Margin="1088,86,0,0" VerticalAlignment="Top" Width="148" Height="23"/>
-            <Label Content="WorkLoad" HorizontalAlignment="Left"  Margin="1122,40,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
+            <ComboBox HorizontalAlignment="Left" SelectedItem="{Binding WorkLoadType, Mode = TwoWay}" ItemsSource="{Binding WorkLoadTypes}" Margin="1088,48,0,0" VerticalAlignment="Top" Width="148" Height="23"/>
+            <Label Content="WorkLoad" HorizontalAlignment="Left"  Margin="1118,14,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
+            <ComboBox HorizontalAlignment="Left" SelectedItem="{Binding TransportType, Mode=TwoWay}" ItemsSource="{Binding TransportTypes}" Margin="1088,118,0,0" VerticalAlignment="Top" Width="148" Height="23"/>
+            <Label Content="TransportType" HorizontalAlignment="Left"  Margin="1104,86,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
         </Grid>
     </Viewbox>
 </Window>
