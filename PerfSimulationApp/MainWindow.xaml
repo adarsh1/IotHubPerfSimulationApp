@@ -35,8 +35,8 @@
             <TextBox x:Name="DeviceCountBox" HorizontalAlignment="Left" Height="42" Margin="834,76,0,0" TextWrapping="Wrap" Text="1" VerticalAlignment="Top" Width="81" PreviewTextInput="DeviceCountBox_PreviewTextInput" FontSize="14"/>
             <Label Content="Hub Connection String" HorizontalAlignment="Left" Margin="32,40,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
             <Label Content="# Devices" HorizontalAlignment="Left" Margin="834,40,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
-            <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="79" Margin="1377,38,0,0" VerticalAlignment="Top" Width="152">
-                <TextBlock x:Name="DeviceCountLabel" Text="{Binding DeviceCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Margin="-1" VerticalAlignment="Top" Height="79" Width="152" FontSize="48" Foreground="Black"/>
+            <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="79" Margin="1440,40,0,0" VerticalAlignment="Top" Width="116">
+                <TextBlock x:Name="DeviceCountLabel" Text="{Binding DeviceCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  HorizontalAlignment="Left" Height="79" Margin="0,0,0,0" VerticalAlignment="Top" Width="116" FontSize="48" Foreground="Black"/>
             </Border>
             <TextBox x:Name="TimeSpanBox" HorizontalAlignment="Left" Height="42" Margin="954,76,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="97" FontSize="14"/>
             <Label Content="TimeSpan" HorizontalAlignment="Left" Margin="954,40,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
@@ -44,6 +44,11 @@
             <Label Content="WorkLoad" HorizontalAlignment="Left"  Margin="1118,14,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
             <ComboBox HorizontalAlignment="Left" SelectedItem="{Binding TransportType, Mode=TwoWay}" ItemsSource="{Binding TransportTypes}" Margin="1088,118,0,0" VerticalAlignment="Top" Width="148" Height="23"/>
             <Label Content="TransportType" HorizontalAlignment="Left"  Margin="1104,86,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
+            <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="79" Margin="1271,39,0,0" VerticalAlignment="Top" Width="147">
+                <TextBlock x:Name="TotalMessageBox" Text="{Binding TotalMessages, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  HorizontalAlignment="Left" Height="79" Margin="0,0,0,0" VerticalAlignment="Top" Width="116" FontSize="48" Foreground="Black"/>
+            </Border>
+            <Label Content="Total Messages" HorizontalAlignment="Left"  Margin="1284,6,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
+            <Label Content="Active Devices" HorizontalAlignment="Left"  Margin="1438,6,0,0" VerticalAlignment="Top" FontSize="16" FontWeight="Bold"/>
         </Grid>
     </Viewbox>
 </Window>

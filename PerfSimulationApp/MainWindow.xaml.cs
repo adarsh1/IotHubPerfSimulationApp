@@ -37,6 +37,7 @@ namespace PerfSimulationApp
         public SeriesCollection ThroughputCollection { get; set; }
 
         public string DeviceCount { get; set; }
+        public long TotalMessages { get; set; }
         public WorkLoadType WorkLoadType { get; set; }
         public IEnumerable<WorkLoadType> WorkLoadTypes => Enum.GetValues(typeof(WorkLoadType)).Cast<WorkLoadType>();
 
@@ -159,6 +160,7 @@ namespace PerfSimulationApp
                         continue;
                     }
 
+                    TotalMessages += stats.Count;
                     throughput += stats.Count * 1000.0 / stats.Interval.TotalMilliseconds;
                     failureThroughput += stats.FailureCount * 1000.0 / stats.Interval.TotalMilliseconds;
                     averageLatencySum += stats.AverageLatency;
@@ -183,6 +185,9 @@ namespace PerfSimulationApp
                 points = LatencyPointQueue.ToArray();
                 latencySeries.Values.Clear();
                 latencySeries.Values.AddRange(points.Select(x => (object)x));
+
+                var totMsgString = TotalMessages + "";
+                Dispatcher.Invoke((Action)(() => TotalMessageBox.Text = totMsgString));
             }
         }
 
@@ -194,7 +199,7 @@ namespace PerfSimulationApp
             DataPointQueue = new SizeLimitedQueue<(double, DateTime)>(CHART_QUEUE_LENGTH);
             FailurePointQueue = new SizeLimitedQueue<(double, DateTime)>(CHART_QUEUE_LENGTH);
             LatencyPointQueue = new SizeLimitedQueue<(double, DateTime)>(CHART_QUEUE_LENGTH);
-
+            TotalMessages = 0;
             var agentCount = Convert.ToInt32(DeviceCountBox.Text);
 
             TimeSpan? runDuration;

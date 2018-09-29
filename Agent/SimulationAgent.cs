@@ -144,6 +144,7 @@ namespace Agent
                 watch.Reset();
                 watch.Start();
                 await method(watch);
+                watch.Stop();
                 tracker.Increment();
                 tracker.UpdateAverageLatency(watch.ElapsedMilliseconds);
             }
