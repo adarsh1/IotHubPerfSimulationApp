@@ -17,6 +17,8 @@ using System.Windows.Shapes;
 using LiveCharts;
 using LiveCharts.Configurations;
 using LiveCharts.Wpf;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.DataContracts;
 using SimulatedDevice;
 using TelemetryReader;
 
@@ -54,11 +56,16 @@ namespace PerfSimulationApp
 
         private List<EventhubReader> readerList;
         CancellationTokenSource tokenSource;
+        TelemetryClient telemetryClient;
 
 
         public ReceiverView()
         {
             InitializeComponent();
+            telemetryClient = new TelemetryClient();
+            telemetryClient.Context.User.Id = Environment.UserName;
+            telemetryClient.Context.Session.Id = Guid.NewGuid().ToString();
+            telemetryClient.Context.Device.OperatingSystem = Environment.OSVersion.ToString();
 
             var dayConfig = Mappers.Xy<(double, DateTime)>()
             .X(dayModel => (double)dayModel.Item2.Ticks / TimeSpan.FromSeconds(1).Ticks)
@@ -114,7 +121,7 @@ namespace PerfSimulationApp
         private void SetTimer()
         {
             // Create a timer with a two second interval.
-            aTimer = new System.Timers.Timer(2000);
+            aTimer = new System.Timers.Timer(1000);
             // Hook up the Elapsed event for the timer. 
             aTimer.Elapsed += OnTimedEvent;
             aTimer.AutoReset = true;
@@ -152,6 +159,11 @@ namespace PerfSimulationApp
 
                 if (activeAgentCount <= 0)
                     return;
+
+                telemetryClient.TrackMetric(new MetricTelemetry("ReceiverThroughput", throughput));
+                telemetryClient.TrackMetric(new MetricTelemetry("AverageEndToEndLatency", averageE2ELatencySum / activeAgentCount));
+                telemetryClient.TrackMetric(new MetricTelemetry("90thPercentileEndToEndLatency", ninetyE2ELatency));
+                telemetryClient.TrackMetric(new MetricTelemetry("AverageIoTHubLatency", averageIotHubLatencySum / activeAgentCount));
 
                 DataPointQueue.Enqueue((throughput, DateTime.UtcNow));
                 E2ELatencyPointQueue.Enqueue((averageE2ELatencySum / activeAgentCount, DateTime.UtcNow));
@@ -242,6 +254,13 @@ namespace PerfSimulationApp
            aTimer?.Stop();
            tokenSource?.Cancel();
             tokenSource?.Dispose();
+            if (telemetryClient != null)
+            {
+                telemetryClient.Flush(); // only for desktop apps
+
+                // Allow time for flushing:
+                System.Threading.Thread.Sleep(1000);
+            }
         }
     }
 }
