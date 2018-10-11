@@ -62,6 +62,7 @@ namespace SimulationModels
             var messageString = JsonConvert.SerializeObject(telemetryDataPoint);
             var message = new Message(Encoding.UTF8.GetBytes(messageString));
             message.Properties.Add("$$CreationTimeUtc", DateTime.UtcNow.ToString());
+            message.Properties.Add("$$CreationTimeUtcTicks", DateTime.UtcNow.Ticks.ToString());
             message.Properties.Add("$$MessageSchema", MessageSchema);
             message.Properties.Add("$$ContentType", "JSON");
             message.Properties.Add("$ThresholdExceeded", telemetryDataPoint.temperature > 25 ? "True" : "False");
