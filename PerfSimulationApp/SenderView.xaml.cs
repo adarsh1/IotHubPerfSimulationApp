@@ -21,6 +21,8 @@ using LiveCharts;
 using LiveCharts.Configurations;
 using LiveCharts.Wpf;
 using Microsoft.Azure.Devices.Client;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.DataContracts;
 using SimulatedDevice;
 
 namespace PerfSimulationApp
@@ -61,10 +63,14 @@ namespace PerfSimulationApp
         private List<SimulationAgent> agentList;
         CancellationTokenSource tokenSource;
 
+        TelemetryClient telemetryClient;
 
-        public SenderView()
+
+        public SenderView(TelemetryClient telClient)
         {
             InitializeComponent();
+
+            telemetryClient = telClient;
 
             var dayConfig = Mappers.Xy<(double, DateTime)>()
             .X(dayModel => (double)dayModel.Item2.Ticks / TimeSpan.FromSeconds(1).Ticks)
@@ -154,6 +160,10 @@ namespace PerfSimulationApp
 
                 if (activeAgentCount <= 0)
                     return;
+
+                telemetryClient?.TrackMetric(new MetricTelemetry("SenderThroughput", throughput));
+                telemetryClient?.TrackMetric(new MetricTelemetry("SenderFailureThroughput", failureThroughput));
+                telemetryClient?.TrackMetric(new MetricTelemetry("SenderAverageLatency", averageLatencySum / activeAgentCount));
 
                 DataPointQueue.Enqueue((throughput, DateTime.UtcNow));
                 FailurePointQueue.Enqueue((failureThroughput, DateTime.UtcNow));

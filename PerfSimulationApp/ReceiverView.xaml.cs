@@ -59,13 +59,10 @@ namespace PerfSimulationApp
         TelemetryClient telemetryClient;
 
 
-        public ReceiverView()
+        public ReceiverView(TelemetryClient telClient)
         {
             InitializeComponent();
-            telemetryClient = new TelemetryClient();
-            telemetryClient.Context.User.Id = Environment.UserName;
-            telemetryClient.Context.Session.Id = Guid.NewGuid().ToString();
-            telemetryClient.Context.Device.OperatingSystem = Environment.OSVersion.ToString();
+            telemetryClient = telClient;
 
             var dayConfig = Mappers.Xy<(double, DateTime)>()
             .X(dayModel => (double)dayModel.Item2.Ticks / TimeSpan.FromSeconds(1).Ticks)
@@ -160,10 +157,10 @@ namespace PerfSimulationApp
                 if (activeAgentCount <= 0)
                     return;
 
-                telemetryClient.TrackMetric(new MetricTelemetry("ReceiverThroughput", throughput));
-                telemetryClient.TrackMetric(new MetricTelemetry("AverageEndToEndLatency", averageE2ELatencySum / activeAgentCount));
-                telemetryClient.TrackMetric(new MetricTelemetry("90thPercentileEndToEndLatency", ninetyE2ELatency));
-                telemetryClient.TrackMetric(new MetricTelemetry("AverageIoTHubLatency", averageIotHubLatencySum / activeAgentCount));
+                telemetryClient?.TrackMetric(new MetricTelemetry("ReceiverThroughput", throughput));
+                telemetryClient?.TrackMetric(new MetricTelemetry("AverageEndToEndLatency", averageE2ELatencySum / activeAgentCount));
+                telemetryClient?.TrackMetric(new MetricTelemetry("90thPercentileEndToEndLatency", ninetyE2ELatency));
+                telemetryClient?.TrackMetric(new MetricTelemetry("AverageIoTHubLatency", averageIotHubLatencySum / activeAgentCount));
 
                 DataPointQueue.Enqueue((throughput, DateTime.UtcNow));
                 E2ELatencyPointQueue.Enqueue((averageE2ELatencySum / activeAgentCount, DateTime.UtcNow));

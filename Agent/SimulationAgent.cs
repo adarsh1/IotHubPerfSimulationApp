@@ -117,7 +117,7 @@ namespace Agent
 
             while (!token.IsCancellationRequested && DateTime.UtcNow < target)
             {
-                await Task.Run(() => Work(workLoadMethod,watch));
+                await Work(workLoadMethod,watch);
             }
         }
 

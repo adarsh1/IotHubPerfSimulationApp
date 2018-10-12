@@ -21,6 +21,7 @@ using IotHubServer;
 using LiveCharts;
 using LiveCharts.Configurations;
 using LiveCharts.Wpf;
+using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Devices.Client;
 using SimulatedDevice;
 
@@ -32,12 +33,17 @@ namespace PerfSimulationApp
     public partial class MainWindow : Window
     {
         TabItem current;
+        TelemetryClient telemetryClient;
         public MainWindow()
         {
             InitializeComponent();
             current = SenderTabItem;
-            SenderTabItem.Content = new SenderView();
-            ReceiverTabItem.Content = new ReceiverView();
+            telemetryClient = new TelemetryClient();
+            telemetryClient.Context.User.Id = Environment.UserName;
+            telemetryClient.Context.Session.Id = Guid.NewGuid().ToString();
+            telemetryClient.Context.Device.OperatingSystem = Environment.OSVersion.ToString();
+            SenderTabItem.Content = new SenderView(telemetryClient);
+            ReceiverTabItem.Content = new ReceiverView(telemetryClient);
             int maxWorker, maxIOC;
             ThreadPool.GetMaxThreads(out maxWorker, out maxIOC);
             // Change the minimum number of worker threads to four, but
@@ -61,11 +67,11 @@ namespace PerfSimulationApp
             (current.Content as IDisposable)?.Dispose();
             if (current == SenderTabItem)
             {
-                SenderTabItem.Content = new SenderView();
+                SenderTabItem.Content = new SenderView(telemetryClient);
             }
             else
             {
-                ReceiverTabItem.Content = new ReceiverView();
+                ReceiverTabItem.Content = new ReceiverView(telemetryClient);
             }
             current = (TabItem)control.SelectedItem;
         }
